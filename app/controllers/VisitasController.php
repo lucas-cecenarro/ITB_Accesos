@@ -6,6 +6,7 @@ require_once __DIR__ . '/../db.php';
 
 class VisitasController
 {
+
     private PDO $db;
 
     // Ajustá si en tu tabla TIPOS_USUARIO el id de "Invitado" no es 6
@@ -53,12 +54,12 @@ class VisitasController
         $ins->execute([
             $nombre,
             $apellido,
-            null,               
-            null,                
+            null,
+            null,
             $dni,
             $tipoDocId,
             self::TIPO_USUARIO_INVITADO,
-            date('Y-m-d')        
+            date('Y-m-d')
         ]);
         return (int)$this->db->lastInsertId();
     }
@@ -98,6 +99,24 @@ class VisitasController
     }
 
     /** Registra ingreso/egreso y devuelve [mensaje, warning, error] */
+    // --- helpers de bloqueo por usuario (pegarlos dentro de la clase) ---
+    private function lockUser(int $usuarioId, int $timeout = 5): void
+    {
+        $st = $this->db->prepare('SELECT GET_LOCK(?, ?)');
+        $st->execute(['acceso_user_' . $usuarioId, $timeout]);
+        $ok = (int)$st->fetchColumn();
+        if ($ok !== 1) {
+            throw new RuntimeException('Otra operación está procesando este usuario. Intentá nuevamente.');
+        }
+    }
+
+    private function unlockUser(int $usuarioId): void
+    {
+        $st = $this->db->prepare('SELECT RELEASE_LOCK(?)');
+        $st->execute(['acceso_user_' . $usuarioId]);
+    }
+
+    // --- método principal ---
     public function registrar(array $post): array
     {
         $mensaje = $warning = $error = null;
@@ -106,7 +125,12 @@ class VisitasController
         $apellido   = trim($post['apellido']   ?? '');
         $dni        = trim($post['dni']        ?? '');
         $tipoDocId  = (int)($post['tipodoc_id'] ?? 1);
-        $tipo       = strtoupper(trim($post['tipo'] ?? 'INGRESO')); // INGRESO|EGRESO
+        $motivo     = trim($post['motivo']     ?? '');
+        if (mb_strlen($motivo) > 200) {
+            $motivo = mb_substr($motivo, 0, 200);
+        }
+
+        $tipo = strtoupper(trim($post['tipo'] ?? 'INGRESO')); // INGRESO | EGRESO
 
         if ($nombre === '' || $apellido === '' || $dni === '') {
             return [null, null, 'Complete nombre, apellido y DNI.'];
@@ -116,52 +140,73 @@ class VisitasController
         }
 
         try {
-            $this->db->beginTransaction();
-
+            // 1) asegurar/obtener usuario
             $usuarioId = $this->asegurarUsuario($nombre, $apellido, $dni, $tipoDocId);
-            $abierto   = $this->ultimoAccesoAbierto($usuarioId);
 
-            if ($tipo === 'INGRESO') {
-                if ($abierto) {
-                    // Ingreso consecutivo sin egreso
-                    $this->registrarAlerta($usuarioId, 'Ingreso consecutivo sin egreso');
+            // 2) tomar lock por usuario para evitar dobles envíos concurrentes
+            $this->lockUser($usuarioId);
+
+            try {
+                // 3) transacción
+                $this->db->beginTransaction();
+
+                $abierto = $this->ultimoAccesoAbierto($usuarioId); // SELECT ... WHERE FechaHora_Salida IS NULL
+
+                if ($tipo === 'INGRESO') {
+                    if ($abierto) {
+                        // Ingreso consecutivo sin egreso → alerta
+                        $this->registrarAlerta($usuarioId, 'Ingreso consecutivo sin egreso');
+                        $this->db->commit();
+                        return [null, 'Se registró una alerta: Ingreso consecutivo sin egreso.', null];
+                    }
+
+                    // INSERT único de ingreso (con motivo)
+                    $ins = $this->db->prepare("
+                    INSERT INTO ACCESOS
+                        (Usuario_ID, FechaHora_Entrada, TipoAcceso, Motivo, Estado_ID)
+                    VALUES (?, NOW(), 'INGRESO', ?, ?)
+                ");
+                    $ins->execute([
+                        $usuarioId,
+                        ($motivo !== '' ? $motivo : null),
+                        self::ESTADO_EN_CURSO
+                    ]);
+
                     $this->db->commit();
-                    return [null, 'Se registró una alerta: Ingreso consecutivo sin egreso.', null];
+                    return ['INGRESO registrado con éxito.', null, null];
+                } else { // EGRESO
+                    if (!$abierto) {
+                        // Egreso sin ingreso previo → alerta
+                        $this->registrarAlerta($usuarioId, 'Egreso sin ingreso previo');
+                        $this->db->commit();
+                        return [null, 'Se registró una alerta: Egreso sin ingreso previo.', null];
+                    }
+
+                    // UPDATE de egreso (cierra el abierto y actualiza motivo si vino)
+                    $upd = $this->db->prepare("
+                    UPDATE ACCESOS
+                       SET FechaHora_Salida = NOW(),
+                           TipoAcceso = 'EGRESO',
+                           Estado_ID = ?,
+                           Motivo = COALESCE(NULLIF(?, ''), Motivo)
+                     WHERE Acceso_ID = ?
+                ");
+                    $upd->execute([
+                        self::ESTADO_COMPLETADO,
+                        $motivo,
+                        (int)$abierto['Acceso_ID']
+                    ]);
+
+                    $this->db->commit();
+                    return ['EGRESO registrado con éxito.', null, null];
                 }
-                // Crear nuevo acceso en curso
-                $ins = $this->db->prepare(
-                    "INSERT INTO ACCESOS
-                     (Usuario_ID, FechaHora_Entrada, TipoAcceso, Estado_ID)
-                     VALUES (?, NOW(), 'INGRESO', ?)"
-                );
-                $ins->execute([$usuarioId, self::ESTADO_EN_CURSO]);
-
-                $this->db->commit();
-                return ['INGRESO registrado con éxito.', null, null];
+            } finally {
+                // 4) liberar el lock sí o sí
+                $this->unlockUser($usuarioId);
             }
-
-            // EGRESO
-            if (!$abierto) {
-                // Egreso sin ingreso previo
-                $this->registrarAlerta($usuarioId, 'Egreso sin ingreso previo');
-                $this->db->commit();
-                return [null, 'Se registró una alerta: Egreso sin ingreso previo.', null];
-            }
-
-            // Cerrar acceso abierto
-            $upd = $this->db->prepare(
-                "UPDATE ACCESOS
-                    SET FechaHora_Salida = NOW(),
-                        TipoAcceso = 'EGRESO',
-                        Estado_ID = ?
-                  WHERE Acceso_ID = ?"
-            );
-            $upd->execute([self::ESTADO_COMPLETADO, (int)$abierto['Acceso_ID']]);
-
-            $this->db->commit();
-            return ['EGRESO registrado con éxito.', null, null];
         } catch (Throwable $e) {
             if ($this->db->inTransaction()) $this->db->rollBack();
+            // Opcional: loguear $e->getMessage()
             return [null, null, 'Error al registrar la acción.'];
         }
     }

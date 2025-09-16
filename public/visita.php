@@ -266,8 +266,42 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         .mt16 {
             margin-top: 16px
         }
+
+        textarea {
+            width: 100%;
+            background: var(--field);
+            color: var(--ink);
+            border: 1px solid var(--field-line);
+            border-radius: 10px;
+            padding: 10px;
+            font-size: 14px;
+            line-height: 1.4;
+            resize: vertical;
+            /* permitir redimensionar sólo en alto (o usa 'none') */
+            min-height: 44px;
+            /* altura base similar al input */
+        }
+
+        textarea::placeholder {
+            color: var(--muted);
+            opacity: .9;
+        }
+
+        /* Utilidad para que un campo ocupe las 2 columnas de .row */
+        .full-span {
+            grid-column: 1 / -1;
+        }
+
+        .success {
+            background: #22c55e;
+            /* verde */
+            color: #06240f;
+            border-color: transparent;
+        }
     </style>
 </head>
+
+
 
 <body>
     <header>
@@ -290,7 +324,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             <?php if ($warning): ?><div class="msg warn"><?= htmlspecialchars($warning, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
             <?php if ($error):   ?><div class="msg err"><?= htmlspecialchars($error,   ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
 
-            <form method="post" autocomplete="off" class="mt12">
+            <form method="post" autocomplete="off" class="mt12" id="frm-visitas">
                 <div class="row">
                     <div class="field">
                         <label for="v-nombre">Nombre</label>
@@ -318,6 +352,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                         <input id="v-dni" type="number" name="dni" required>
                     </div>
                 </div>
+                <div class="row mt12">
+                    <div class="field full-span">
+                        <label for="v-motivo">Motivo (opcional)</label>
+                        <textarea id="v-motivo" name="motivo" rows="2" maxlength="200"
+                            placeholder="Ej.: visita a dirección, proveedor, mantenimiento…"></textarea>
+                    </div>
+                </div>
+
+
 
                 <div class="mt12">
                     <label>Acción</label>
@@ -327,10 +370,87 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     </div>
                 </div>
 
-                <button type="submit" class="primary full mt16">Registrar</button>
+                <div class="mt12">
+                    <button type="button" id="btn-open" class="btn" disabled>Abrir molinete</button>
+                    <span id="open-msg" class="pill" style="display:none; margin-left:8px"></span>
+                </div>
+
+                <button type="submit" class="primary full mt16" id="btn-submit">Registrar</button>
             </form>
         </section>
     </main>
 </body>
+
+<script>
+    const API_MOL = '<?= htmlspecialchars(BASE_URL, ENT_QUOTES, "UTF-8") ?>/api/molinete_abrir.php';
+</script>
+
+<script>
+    (function() {
+        const $nombre = document.getElementById('v-nombre');
+        const $apellido = document.getElementById('v-apellido');
+        const $dni = document.getElementById('v-dni');
+        const $btn = document.getElementById('btn-open');
+        const $msg = document.getElementById('open-msg');
+
+        function isValid() {
+            return $nombre.value.trim() !== '' &&
+                $apellido.value.trim() !== '' &&
+                $dni.value.trim() !== '';
+        }
+
+        function refreshButton() {
+            const ok = isValid();
+            $btn.disabled = !ok;
+            $btn.classList.toggle('success', ok);
+        }
+
+        [$nombre, $apellido, $dni].forEach(el => el.addEventListener('input', refreshButton));
+        refreshButton();
+
+        $btn.addEventListener('click', async () => {
+            if ($btn.disabled) return;
+
+            $btn.disabled = true;
+            const oldTxt = $btn.textContent;
+            $btn.textContent = 'Abriendo…';
+            $msg.style.display = 'none';
+
+            try {
+                const r = await fetch(API_MOL, {
+                    method: 'POST'
+                });
+                const txt = await r.text(); // <- primero texto
+                let data = null;
+                try {
+                    data = JSON.parse(txt); // <- intentamos parsear
+                } catch (e) {
+                    throw new Error(`HTTP ${r.status} – respuesta no JSON: ${txt.slice(0,120)}`);
+                }
+
+                $msg.textContent = data.ok ?
+                    `Molinete abierto (${data.open_for}s)` :
+                    (data.error || 'No se pudo abrir');
+                $msg.style.display = 'inline-block';
+
+            } catch (e) {
+                $msg.textContent = (e && e.message) ? e.message : 'Error de red';
+                $msg.style.display = 'inline-block';
+            } finally {
+                $btn.textContent = oldTxt;
+                refreshButton();
+            }
+        });
+
+    })();
+</script>
+
+<script>
+    document.getElementById('frm-visitas').addEventListener('submit', function() {
+        const btn = document.getElementById('btn-submit');
+        btn.disabled = true;
+        btn.textContent = 'Registrando…';
+    });
+</script>
 
 </html>
