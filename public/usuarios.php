@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../app/session.php';
-requireRole([ROLE_SUPERUSUARIO]);
+requireRole([ROLE_SEGURIDAD]);
 require_once __DIR__ . '/../app/db.php';
 require_once __DIR__ . '/../app/models/usuario.php';
 $pdo = DB::conn();

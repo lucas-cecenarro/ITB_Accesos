@@ -181,11 +181,6 @@ $rolTxt   = $_SESSION['rol']      ?? '';
                     </div>
                 </div>
 
-
-            <?php endif; ?>
-
-            <?php if ($rolId === 1):
-            ?>
                 <div class="card">
                     <h3>Usuarios / Actividad</h3>
                     <p>Consulta y filtrado de <b>movimientos</b>: ingresos, egresos y alertas.</p>
@@ -193,6 +188,11 @@ $rolTxt   = $_SESSION['rol']      ?? '';
                         <a class="btn primary" href="usuarios.php">Abrir Buscador</a>
                     </div>
                 </div>
+
+            <?php endif; ?>
+
+            <?php if ($rolId === 1):
+            ?>
                 <div class="card">
                     <h3>Reportes</h3>
                     <p>Generación de reportes en <b>CSV</b> y <b>PDF</b> con filtros por fecha y tipo.</p>

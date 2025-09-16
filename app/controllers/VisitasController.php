@@ -23,6 +23,16 @@ class VisitasController
         @date_default_timezone_set('America/Argentina/Buenos_Aires');
     }
 
+    private function operadorActualId(): ?int
+    {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        $rid = (int)($_SESSION['rol_id'] ?? 0);
+        if ($rid === 1 || $rid === 2) {
+            return (int)($_SESSION['user_id'] ?? 0) ?: null;
+        }
+        return null;
+    }
+
     /** Para el combo */
     public function tiposDocumento(): array
     {
@@ -121,14 +131,12 @@ class VisitasController
     {
         $mensaje = $warning = $error = null;
 
-        $nombre     = trim($post['nombre']     ?? '');
-        $apellido   = trim($post['apellido']   ?? '');
-        $dni        = trim($post['dni']        ?? '');
-        $tipoDocId  = (int)($post['tipodoc_id'] ?? 1);
-        $motivo     = trim($post['motivo']     ?? '');
-        if (mb_strlen($motivo) > 200) {
-            $motivo = mb_substr($motivo, 0, 200);
-        }
+        $nombre    = trim($post['nombre']     ?? '');
+        $apellido  = trim($post['apellido']   ?? '');
+        $dni       = trim($post['dni']        ?? '');
+        $tipoDocId = (int)($post['tipodoc_id'] ?? 1);
+        $motivo    = trim($post['motivo']     ?? '');
+        if (mb_strlen($motivo) > 200) $motivo = mb_substr($motivo, 0, 200);
 
         $tipo = strtoupper(trim($post['tipo'] ?? 'INGRESO')); // INGRESO | EGRESO
 
@@ -139,74 +147,71 @@ class VisitasController
             return [null, null, 'Tipo inválido.'];
         }
 
+        // operador actual (seguridad / superusuario)
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        $opId = (int)($_SESSION['user_id'] ?? 0) ?: null;
+
         try {
-            // 1) asegurar/obtener usuario
+            $this->db->beginTransaction();
+
             $usuarioId = $this->asegurarUsuario($nombre, $apellido, $dni, $tipoDocId);
+            $abierto   = $this->ultimoAccesoAbierto($usuarioId); // null o fila con Acceso_ID
 
-            // 2) tomar lock por usuario para evitar dobles envíos concurrentes
-            $this->lockUser($usuarioId);
-
-            try {
-                // 3) transacción
-                $this->db->beginTransaction();
-
-                $abierto = $this->ultimoAccesoAbierto($usuarioId); // SELECT ... WHERE FechaHora_Salida IS NULL
-
-                if ($tipo === 'INGRESO') {
-                    if ($abierto) {
-                        // Ingreso consecutivo sin egreso → alerta
-                        $this->registrarAlerta($usuarioId, 'Ingreso consecutivo sin egreso');
-                        $this->db->commit();
-                        return [null, 'Se registró una alerta: Ingreso consecutivo sin egreso.', null];
-                    }
-
-                    // INSERT único de ingreso (con motivo)
-                    $ins = $this->db->prepare("
-                    INSERT INTO ACCESOS
-                        (Usuario_ID, FechaHora_Entrada, TipoAcceso, Motivo, Estado_ID)
-                    VALUES (?, NOW(), 'INGRESO', ?, ?)
-                ");
-                    $ins->execute([
-                        $usuarioId,
-                        ($motivo !== '' ? $motivo : null),
-                        self::ESTADO_EN_CURSO
-                    ]);
-
+            if ($tipo === 'INGRESO') {
+                if ($abierto) {
+                    // Ingreso consecutivo sin egreso
+                    $this->registrarAlerta($usuarioId, 'Ingreso consecutivo sin egreso');
                     $this->db->commit();
-                    return ['INGRESO registrado con éxito.', null, null];
-                } else { // EGRESO
-                    if (!$abierto) {
-                        // Egreso sin ingreso previo → alerta
-                        $this->registrarAlerta($usuarioId, 'Egreso sin ingreso previo');
-                        $this->db->commit();
-                        return [null, 'Se registró una alerta: Egreso sin ingreso previo.', null];
-                    }
-
-                    // UPDATE de egreso (cierra el abierto y actualiza motivo si vino)
-                    $upd = $this->db->prepare("
-                    UPDATE ACCESOS
-                       SET FechaHora_Salida = NOW(),
-                           TipoAcceso = 'EGRESO',
-                           Estado_ID = ?,
-                           Motivo = COALESCE(NULLIF(?, ''), Motivo)
-                     WHERE Acceso_ID = ?
-                ");
-                    $upd->execute([
-                        self::ESTADO_COMPLETADO,
-                        $motivo,
-                        (int)$abierto['Acceso_ID']
-                    ]);
-
-                    $this->db->commit();
-                    return ['EGRESO registrado con éxito.', null, null];
+                    return [null, 'Se registró una alerta: Ingreso consecutivo sin egreso.', null];
                 }
-            } finally {
-                // 4) liberar el lock sí o sí
-                $this->unlockUser($usuarioId);
+
+                // NUEVO registro de acceso (en curso) guardando el operador que abrió
+                $ins = $this->db->prepare(
+                    "INSERT INTO ACCESOS
+                 (Usuario_ID, Operador_Ingreso_ID, FechaHora_Entrada, TipoAcceso, Motivo, Estado_ID)
+                 VALUES (?, ?, NOW(), 'INGRESO', ?, ?)"
+                );
+                $ins->execute([
+                    $usuarioId,
+                    $opId,
+                    ($motivo !== '' ? $motivo : null),
+                    self::ESTADO_EN_CURSO // = 1 (EN_CURSO)
+                ]);
+
+                $this->db->commit();
+                return ['INGRESO registrado con éxito.', null, null];
             }
+
+            // EGRESO
+            if (!$abierto) {
+                // Egreso sin ingreso previo
+                $this->registrarAlerta($usuarioId, 'Egreso sin ingreso previo');
+                $this->db->commit();
+                return [null, 'Se registró una alerta: Egreso sin ingreso previo.', null];
+            }
+
+            // Cerrar el acceso abierto: registrar operador que cerró y opcionalmente motivo
+            $upd = $this->db->prepare(
+                "UPDATE ACCESOS
+                SET FechaHora_Salida   = NOW(),
+                    TipoAcceso         = 'EGRESO',
+                    Estado_ID          = ?,
+                    Operador_Egreso_ID = ?,
+                    Motivo             = COALESCE(NULLIF(?, ''), Motivo)
+              WHERE Acceso_ID = ?"
+            );
+            $upd->execute([
+                self::ESTADO_COMPLETADO,  // = 2 (COMPLETADO)
+                $opId,
+                $motivo,
+                (int)$abierto['Acceso_ID']
+            ]);
+
+            $this->db->commit();
+            return ['EGRESO registrado con éxito.', null, null];
         } catch (Throwable $e) {
             if ($this->db->inTransaction()) $this->db->rollBack();
-            // Opcional: loguear $e->getMessage()
+            // si querés, logueá $e->getMessage()
             return [null, null, 'Error al registrar la acción.'];
         }
     }

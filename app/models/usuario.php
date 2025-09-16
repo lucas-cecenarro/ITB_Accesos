@@ -78,6 +78,27 @@ class UsuarioBusqueda
         return [$sql, $p];
     }
 
+    private function userFiltersWithSuffix(array $f, string $suf): array
+    {
+        $w = [];
+        $p = [];
+
+        if ($f['nombre'] !== '') {
+            $w[] = "u.Nombre LIKE :nombre{$suf}";
+            $p[":nombre{$suf}"] = "%{$f['nombre']}%";
+        }
+        if ($f['apellido'] !== '') {
+            $w[] = "u.Apellido LIKE :apellido{$suf}";
+            $p[":apellido{$suf}"] = "%{$f['apellido']}%";
+        }
+        if ($f['dni'] !== '') {
+            $w[] = "u.Num_Documento LIKE :dni{$suf}";
+            $p[":dni{$suf}"] = "%{$f['dni']}%";
+        }
+
+        return [$w ? ' AND ' . implode(' AND ', $w) : '', $p];
+    }
+
     /** Igual que whereUsuario pero agrega un sufijo a los placeholders para usar en UNION */
     private function whereUsuarioSufijo(array $f, string $suf): array
     {
@@ -116,12 +137,24 @@ class UsuarioBusqueda
     /** Ejecuta la búsqueda y devuelve filas normalizadas (tipo/fecha/hora) */
     public function buscarAccesos(array $f): array
     {
-        [$desdeDT, $hastaDT] = $this->rangoFechas($f);
+        // Rango de fechas (se usa dos veces)
+        [$d1, $h1] = $this->rangoFechas($f);
 
-        // Filtros con sufijo para cada subconsulta del UNION
-        [$w1, $p1] = $this->whereUsuarioSufijo($f, '1'); // ingresos
-        [$w2, $p2] = $this->whereUsuarioSufijo($f, '2'); // egresos
+        // Filtros por usuario con sufijos distintos para cada subconsulta
+        [$w1, $p1] = $this->userFiltersWithSuffix($f, '1'); // para INGRESOS
+        [$w2, $p2] = $this->userFiltersWithSuffix($f, '2'); // para EGRESOS
 
+        // Filtro por operador (si viene)
+        $op1 = $op2 = '';
+        $params = array_merge($p1, $p2);
+        if (!empty($f['operadorId'])) {
+            $op1 = " AND a.Operador_Ingreso_ID = :op1";
+            $op2 = " AND a.Operador_Egreso_ID  = :op2";
+            $params[':op1'] = (int)$f['operadorId'];
+            $params[':op2'] = (int)$f['operadorId'];
+        }
+
+        // Subconsulta INGRESOS: toma el operador que abrió
         $subIng = "
       SELECT
         u.Nombre        AS nombre,
@@ -130,13 +163,15 @@ class UsuarioBusqueda
         'INGRESO'       AS tipo,
         DATE(a.FechaHora_Entrada) AS fecha,
         TIME(a.FechaHora_Entrada) AS hora,
-        NULL            AS operador
+        CONCAT(op.Nombre, ' ', op.Apellido) AS operador
       FROM ACCESOS a
-      JOIN USUARIOS u ON u.Usuario_ID = a.Usuario_ID
+      JOIN USUARIOS u  ON u.Usuario_ID = a.Usuario_ID
+      LEFT JOIN USUARIOS op ON op.Usuario_ID = a.Operador_Ingreso_ID
       WHERE a.FechaHora_Entrada BETWEEN :d1 AND :h1
-      {$w1}
+        {$w1} {$op1}
     ";
 
+        // Subconsulta EGRESOS: toma el operador que cerró
         $subEg = "
       SELECT
         u.Nombre        AS nombre,
@@ -145,26 +180,28 @@ class UsuarioBusqueda
         'EGRESO'        AS tipo,
         DATE(a.FechaHora_Salida) AS fecha,
         TIME(a.FechaHora_Salida) AS hora,
-        NULL            AS operador
+        CONCAT(ope.Nombre, ' ', ope.Apellido) AS operador
       FROM ACCESOS a
-      JOIN USUARIOS u ON u.Usuario_ID = a.Usuario_ID
+      JOIN USUARIOS u   ON u.Usuario_ID = a.Usuario_ID
+      LEFT JOIN USUARIOS ope ON ope.Usuario_ID = a.Operador_Egreso_ID
       WHERE a.FechaHora_Salida IS NOT NULL
         AND a.FechaHora_Salida BETWEEN :d2 AND :h2
-      {$w2}
+        {$w2} {$op2}
     ";
 
         $sql = "($subIng) UNION ALL ($subEg) ORDER BY fecha DESC, hora DESC";
         $st  = $this->db->prepare($sql);
 
-        // Rangos
-        $st->bindValue(':d1', $desdeDT);
-        $st->bindValue(':h1', $hastaDT);
-        $st->bindValue(':d2', $desdeDT);
-        $st->bindValue(':h2', $hastaDT);
+        // Fechas (se reaprovecha el mismo rango en ambas)
+        $st->bindValue(':d1', $d1);
+        $st->bindValue(':h1', $h1);
+        $st->bindValue(':d2', $d1);
+        $st->bindValue(':h2', $h1);
 
-        // Filtros de usuario en cada subconsulta (placeholders distintos)
-        foreach ($p1 as $k => $v) $st->bindValue($k, $v);
-        foreach ($p2 as $k => $v) $st->bindValue($k, $v);
+        // Parámetros de filtros por usuario y operador
+        foreach ($params as $k => $v) {
+            $st->bindValue($k, $v);
+        }
 
         $st->execute();
         return $st->fetchAll(PDO::FETCH_ASSOC);
