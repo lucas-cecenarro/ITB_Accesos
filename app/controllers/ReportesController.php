@@ -235,14 +235,14 @@ class ReportesController
         u.Num_Documento                       AS dni,
         u.Nombre                              AS nombre,
         u.Apellido                            AS apellido,
-        r.Nombre                              AS rol,
+        COALESCE(tu.Nombre,'Invitado')                  AS categoria,
         'INGRESO'                             AS tipo,
         DATE(a.FechaHora_Entrada)             AS fecha,
         TIME(a.FechaHora_Entrada)             AS hora,
         e.Nombre                              AS estado
       FROM ACCESOS a
       JOIN USUARIOS u        ON u.Usuario_ID = a.Usuario_ID
-      LEFT JOIN ROLES r      ON r.Rol_ID     = u.Rol_ID
+      LEFT JOIN TIPO_USUARIO tu      ON tu.TipoUsuario_ID     = u.TipoUsuario_ID
       LEFT JOIN estado_acceso e ON e.Estado_ID = a.Estado_ID
       WHERE a.FechaHora_Entrada BETWEEN :d1 AND :h1 {$w1}
     ";
@@ -255,14 +255,14 @@ class ReportesController
         u.Num_Documento                       AS dni,
         u.Nombre                              AS nombre,
         u.Apellido                            AS apellido,
-        r.Nombre                              AS rol,
+        COALESCE(tu.Nombre,'Invitado')                  AS categoria,
         'EGRESO'                              AS tipo,
         DATE(a.FechaHora_Salida)              AS fecha,
         TIME(a.FechaHora_Salida)              AS hora,
         e.Nombre                              AS estado
       FROM ACCESOS a
       JOIN USUARIOS u        ON u.Usuario_ID = a.Usuario_ID
-      LEFT JOIN ROLES r      ON r.Rol_ID     = u.Rol_ID
+      LEFT JOIN TIPO_USUARIO tu      ON tu.TipoUsuario_ID     = u.TipoUsuario_ID
       LEFT JOIN estado_acceso e ON e.Estado_ID = a.Estado_ID
       WHERE a.FechaHora_Salida IS NOT NULL
         AND a.FechaHora_Salida BETWEEN :d2 AND :h2 {$w2}
@@ -311,11 +311,11 @@ class ReportesController
         u.Num_Documento                       AS dni,
         u.Nombre                              AS nombre,
         u.Apellido                            AS apellido,
-        r.Nombre                              AS rol,
+        COALESCE(tu.Nombre,'Invitado')                  AS categoria,
         e.Nombre                              AS estado
       FROM ACCESOS a
       JOIN USUARIOS u        ON u.Usuario_ID = a.Usuario_ID
-      LEFT JOIN ROLES r      ON r.Rol_ID     = u.Rol_ID
+      LEFT JOIN TIPO_USUARIO tu      ON tu.TipoUsuario_ID     = u.TipoUsuario_ID
       LEFT JOIN estado_acceso e ON e.Estado_ID = a.Estado_ID
       WHERE a.FechaHora_Entrada BETWEEN :d1 AND :h1 {$w1}
     ";
@@ -329,11 +329,11 @@ class ReportesController
         u.Num_Documento                       AS dni,
         u.Nombre                              AS nombre,
         u.Apellido                            AS apellido,
-        r.Nombre                              AS rol,
+        COALESCE(tu.Nombre,'Invitado')                   AS categoria,
         e.Nombre                              AS estado
       FROM ACCESOS a
       JOIN USUARIOS u        ON u.Usuario_ID = a.Usuario_ID
-      LEFT JOIN ROLES r      ON r.Rol_ID     = u.Rol_ID
+      LEFT JOIN TIPO_USUARIO tu      ON tu.TipoUsuario_ID     = u.TipoUsuario_ID
       LEFT JOIN estado_acceso e ON e.Estado_ID = a.Estado_ID
       WHERE a.FechaHora_Salida IS NOT NULL
         AND a.FechaHora_Salida BETWEEN :d2 AND :h2 {$w2}

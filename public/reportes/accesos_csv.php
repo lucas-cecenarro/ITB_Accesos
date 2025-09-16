@@ -35,7 +35,7 @@ $out = fopen('php://output', 'w');
 fwrite($out, "\xEF\xBB\xBF");
 
 // Encabezados
-fputcsv($out, ['fecha_hora','tipo','dni','nombre','apellido','rol','estado'], $delimiter);
+fputcsv($out, ['fecha_hora','tipo','dni','nombre','apellido','categoria','estado'], $delimiter);
 
 // Filas
 $cnt = 0;
@@ -57,7 +57,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             (string)($row['dni']      ?? ''),
             (string)($row['nombre']   ?? ''),
             (string)($row['apellido'] ?? ''),
-            (string)($row['rol']      ?? ''),
+            (string)($row['categoria'] ?? 'Invitado'),
             $estadoTxt
         ],
         $delimiter

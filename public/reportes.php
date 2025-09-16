@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 require_once __DIR__ . '/../app/db.php';
 require_once __DIR__ . '/../app/controllers/ReportesController.php';
@@ -343,17 +344,17 @@ if (!$errores) {
 
                     <div class="field span-2">
                         <label>DNI</label>
-                        <input class="control" type= number name="dni" value="<?= htmlspecialchars($f['dni']) ?>">
+                        <input class="control" type=number name="dni" value="<?= htmlspecialchars($f['dni']) ?>">
                     </div>
 
                     <div class="field span-3">
                         <label>Nombre</label>
-                        <input class="control" type= text name="nombre" value="<?= htmlspecialchars($f['nombre']) ?>">
+                        <input class="control" type=text name="nombre" value="<?= htmlspecialchars($f['nombre']) ?>">
                     </div>
 
                     <div class="field span-3">
                         <label>Apellido</label>
-                        <input class="control" type= text name="apellido" value="<?= htmlspecialchars($f['apellido']) ?>">
+                        <input class="control" type=text name="apellido" value="<?= htmlspecialchars($f['apellido']) ?>">
                     </div>
                 </div>
 
@@ -385,20 +386,20 @@ if (!$errores) {
                             <th>DNI</th>
                             <th>Nombre</th>
                             <th>Apellido</th>
-                            <th>Rol</th>
+                            <th>Categoría</th>
                             <th>Estado</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($rows as $r): ?>
                             <tr>
-                                <td><?= htmlspecialchars($r['fecha'] . ' ' . $r['hora']) ?></td>
-                                <td><?= htmlspecialchars($r['tipo']) ?></td>
-                                <td><?= htmlspecialchars($r['dni']) ?></td>
-                                <td><?= htmlspecialchars($r['nombre']) ?></td>
-                                <td><?= htmlspecialchars($r['apellido']) ?></td>
-                                <td><?= htmlspecialchars($r['rol']) ?></td>
-                                <td><?= ((int)$r['estado'] === 1 ? 'Ingreso' : 'Egreso') ?></td>
+                                <td><?= htmlspecialchars((($r['fecha'] ?? '') . ' ' . ($r['hora'] ?? '')), ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars((string)($r['tipo']     ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars((string)($r['dni']      ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars((string)($r['nombre']   ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars((string)($r['apellido'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars((string)($r['categoria'] ?? 'Invitado'), ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars((string)($r['estado']   ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
