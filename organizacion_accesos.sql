@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 16-09-2025 a las 02:16:04
+-- Tiempo de generación: 16-09-2025 a las 17:16:22
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -30,6 +30,8 @@ SET time_zone = "+00:00";
 CREATE TABLE `accesos` (
   `Acceso_ID` int(11) NOT NULL,
   `Usuario_ID` int(11) NOT NULL,
+  `Operador_Ingreso_ID` int(11) DEFAULT NULL,
+  `Operador_Egreso_ID` int(11) DEFAULT NULL,
   `FechaHora_Entrada` datetime NOT NULL,
   `FechaHora_Salida` datetime DEFAULT NULL,
   `TipoAcceso` varchar(10) NOT NULL,
@@ -41,9 +43,13 @@ CREATE TABLE `accesos` (
 -- Volcado de datos para la tabla `accesos`
 --
 
-INSERT INTO `accesos` (`Acceso_ID`, `Usuario_ID`, `FechaHora_Entrada`, `FechaHora_Salida`, `TipoAcceso`, `Motivo`, `Estado_ID`) VALUES
-(1, 2, '2025-09-14 23:13:08', '2025-09-15 01:13:08', 'INGRESO', NULL, 2),
-(2, 3, '2025-09-15 21:05:36', '2025-09-15 21:13:01', 'EGRESO', NULL, 2);
+INSERT INTO `accesos` (`Acceso_ID`, `Usuario_ID`, `Operador_Ingreso_ID`, `Operador_Egreso_ID`, `FechaHora_Entrada`, `FechaHora_Salida`, `TipoAcceso`, `Motivo`, `Estado_ID`) VALUES
+(1, 2, NULL, NULL, '2025-09-14 23:13:08', '2025-09-15 01:13:08', 'INGRESO', NULL, 2),
+(2, 3, NULL, NULL, '2025-09-15 21:05:36', '2025-09-15 21:13:01', 'EGRESO', NULL, 2),
+(3, 4, NULL, NULL, '2025-09-15 23:06:29', '2025-09-15 23:27:43', 'EGRESO', NULL, 2),
+(4, 4, NULL, NULL, '2025-09-15 23:06:29', NULL, 'INGRESO', 'Soporte Tecnico', 1),
+(5, 6, NULL, NULL, '2025-09-16 10:52:02', '2025-09-16 10:52:27', 'EGRESO', NULL, 2),
+(6, 7, 2, 2, '2025-09-16 11:23:22', '2025-09-16 11:24:50', 'EGRESO', NULL, 2);
 
 -- --------------------------------------------------------
 
@@ -64,7 +70,9 @@ CREATE TABLE `alertas` (
 
 INSERT INTO `alertas` (`Alerta_ID`, `Usuario_ID`, `FechaHora`, `Motivo`) VALUES
 (1, 1, '2025-09-14 23:13:09', 'Ingreso sin egreso previo detectado'),
-(2, 3, '2025-09-15 21:13:19', 'Egreso sin ingreso previo');
+(2, 3, '2025-09-15 21:13:19', 'Egreso sin ingreso previo'),
+(3, 5, '2025-09-15 23:26:55', 'Egreso sin ingreso previo'),
+(4, 6, '2025-09-16 10:53:07', 'Egreso sin ingreso previo');
 
 -- --------------------------------------------------------
 
@@ -208,7 +216,11 @@ INSERT INTO `reportes` (`Reporte_ID`, `Usuario_ID`, `FechaIni`, `FechaFin`, `Tip
 (6, 1, '2025-09-08', '2025-09-15', 'GENERAL', 'CSV'),
 (7, 1, '2025-09-08', '2025-09-15', 'GENERAL', 'CSV'),
 (8, 1, '2025-09-08', '2025-09-15', 'GENERAL', 'CSV'),
-(9, 1, '2025-09-08', '2025-09-15', 'GENERAL', 'CSV');
+(9, 1, '2025-09-08', '2025-09-15', 'GENERAL', 'CSV'),
+(10, 1, '2025-09-08', '2025-09-15', 'GENERAL', 'CSV'),
+(11, 1, '2025-09-08', '2025-09-15', 'GENERAL', 'CSV'),
+(12, 1, '2025-09-08', '2025-09-15', 'GENERAL', 'PDF'),
+(13, 1, '2025-09-08', '2025-09-15', 'GENERAL', 'PDF');
 
 -- --------------------------------------------------------
 
@@ -325,7 +337,11 @@ CREATE TABLE `usuarios` (
 INSERT INTO `usuarios` (`Usuario_ID`, `Nombre`, `Apellido`, `Correo`, `Password`, `Num_Documento`, `Fecha_Registro`, `TipoDoc_ID`, `Direccion_ID`, `Rol_ID`, `TipoUsuario_ID`) VALUES
 (1, 'Admin', 'ITB', 'admin@itb.com', 'admin123', '30111222', '2025-09-14', 1, NULL, 1, 9),
 (2, 'Carlos', 'Guard', 'seguridad@itb.com', 'seguridad123', '30222333', '2025-09-14', 1, 1, 2, 8),
-(3, 'Francisco', 'Martinez', NULL, NULL, '45996300', '0000-00-00', 1, NULL, NULL, 6);
+(3, 'Francisco', 'Martinez', NULL, NULL, '45996300', '0000-00-00', 1, NULL, NULL, 6),
+(4, 'Martina', 'Echeverria', NULL, NULL, '41558222', '2025-09-15', 2, NULL, NULL, 6),
+(5, 'Martina', 'Echeverria', NULL, NULL, '41558222', '2025-09-15', 1, NULL, NULL, 6),
+(6, 'Julian', 'Correa', NULL, NULL, '46885112', '2025-09-16', 1, NULL, NULL, 6),
+(7, 'Mariano', 'Martinez', NULL, NULL, '41226553', '2025-09-16', 1, NULL, NULL, 6);
 
 --
 -- Índices para tablas volcadas
@@ -337,7 +353,9 @@ INSERT INTO `usuarios` (`Usuario_ID`, `Nombre`, `Apellido`, `Correo`, `Password`
 ALTER TABLE `accesos`
   ADD PRIMARY KEY (`Acceso_ID`),
   ADD KEY `fk_accesos_usuarios` (`Usuario_ID`),
-  ADD KEY `fk_accesos_estado` (`Estado_ID`);
+  ADD KEY `fk_accesos_estado` (`Estado_ID`),
+  ADD KEY `fk_accesos_op_ing` (`Operador_Ingreso_ID`),
+  ADD KEY `fk_accesos_op_egr` (`Operador_Egreso_ID`);
 
 --
 -- Indices de la tabla `alertas`
@@ -427,13 +445,13 @@ ALTER TABLE `usuarios`
 -- AUTO_INCREMENT de la tabla `accesos`
 --
 ALTER TABLE `accesos`
-  MODIFY `Acceso_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `Acceso_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `alertas`
 --
 ALTER TABLE `alertas`
-  MODIFY `Alerta_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `Alerta_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `direcciones`
@@ -463,7 +481,7 @@ ALTER TABLE `provincias`
 -- AUTO_INCREMENT de la tabla `reportes`
 --
 ALTER TABLE `reportes`
-  MODIFY `Reporte_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `Reporte_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT de la tabla `roles`
@@ -493,7 +511,7 @@ ALTER TABLE `tipo_usuario`
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `Usuario_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `Usuario_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- Restricciones para tablas volcadas
@@ -504,6 +522,8 @@ ALTER TABLE `usuarios`
 --
 ALTER TABLE `accesos`
   ADD CONSTRAINT `fk_accesos_estado` FOREIGN KEY (`Estado_ID`) REFERENCES `estado_acceso` (`Estado_ID`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_accesos_op_egr` FOREIGN KEY (`Operador_Egreso_ID`) REFERENCES `usuarios` (`Usuario_ID`),
+  ADD CONSTRAINT `fk_accesos_op_ing` FOREIGN KEY (`Operador_Ingreso_ID`) REFERENCES `usuarios` (`Usuario_ID`),
   ADD CONSTRAINT `fk_accesos_usuarios` FOREIGN KEY (`Usuario_ID`) REFERENCES `usuarios` (`Usuario_ID`) ON UPDATE CASCADE;
 
 --
