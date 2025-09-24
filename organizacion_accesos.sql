@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 16-09-2025 a las 17:16:22
+-- Tiempo de generación: 24-09-2025 a las 18:10:49
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -49,7 +49,9 @@ INSERT INTO `accesos` (`Acceso_ID`, `Usuario_ID`, `Operador_Ingreso_ID`, `Operad
 (3, 4, NULL, NULL, '2025-09-15 23:06:29', '2025-09-15 23:27:43', 'EGRESO', NULL, 2),
 (4, 4, NULL, NULL, '2025-09-15 23:06:29', NULL, 'INGRESO', 'Soporte Tecnico', 1),
 (5, 6, NULL, NULL, '2025-09-16 10:52:02', '2025-09-16 10:52:27', 'EGRESO', NULL, 2),
-(6, 7, 2, 2, '2025-09-16 11:23:22', '2025-09-16 11:24:50', 'EGRESO', NULL, 2);
+(6, 7, 2, 2, '2025-09-16 11:23:22', '2025-09-16 11:24:50', 'EGRESO', NULL, 2),
+(7, 8, 2, 2, '2025-09-16 12:21:04', '2025-09-16 12:21:26', 'EGRESO', NULL, 2),
+(8, 9, 2, 2, '2025-09-17 19:06:41', '2025-09-17 19:07:20', 'EGRESO', NULL, 2);
 
 -- --------------------------------------------------------
 
@@ -150,6 +152,37 @@ INSERT INTO `localidades` (`Localidad_ID`, `Nombre`, `Provincia_ID`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `password_resets`
+--
+
+CREATE TABLE `password_resets` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `used_at` datetime DEFAULT NULL,
+  `requested_ip` varchar(45) DEFAULT NULL,
+  `user_agent` varchar(255) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `password_resets`
+--
+
+INSERT INTO `password_resets` (`id`, `user_id`, `token_hash`, `expires_at`, `used_at`, `requested_ip`, `user_agent`, `created_at`) VALUES
+(1, 2, 'a04914b4a4ca928bebe5f261e90a0fb7d309431db3e27953fcbe1b1519ec9fda', '2025-09-24 10:43:55', '2025-09-24 10:14:34', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', '2025-09-24 10:13:55'),
+(2, 2, 'b04beb1c5877fdbeddc866a6ebaeca1f97c9e33a817ce81df4af570d123b2f5d', '2025-09-24 12:33:14', '2025-09-24 12:03:38', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', '2025-09-24 12:03:14'),
+(3, 2, 'c1e9b27b9fef6c2083d379524e3450fd8c401828c6d40ad4fe130b1025fb1987', '2025-09-24 12:34:00', '2025-09-24 12:17:50', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', '2025-09-24 12:04:00'),
+(4, 2, '589a18e1ad120365b6af2fbd0d8ac6be9d676f3adadb404617240fcbc45b0ee5', '2025-09-24 12:47:50', '2025-09-24 12:18:43', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', '2025-09-24 12:17:50'),
+(5, 2, 'e21deb7b105cf2bc402287bf5df50055cb97cf5ba32688ad66e65bed363a13a5', '2025-09-24 12:49:36', '2025-09-24 12:20:01', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', '2025-09-24 12:19:36'),
+(6, 2, '473bcb2db9e7907aaab050eed2148cc1c3af9e264d807b92fb9e7ed474eb2448', '2025-09-24 12:50:01', '2025-09-24 12:20:19', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', '2025-09-24 12:20:01'),
+(7, 10, 'd7ebcd9edfcdaad1491c9b58e07035bf70aada8b37d76354b27a7daeed7509cd', '2025-09-24 13:09:24', '2025-09-24 12:39:56', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', '2025-09-24 12:39:24'),
+(8, 2, '8f16e58e7733593fea311318b51a6afe6acfb9a2613bce5f72b85723dd900109', '2025-09-24 13:17:57', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', '2025-09-24 12:47:57');
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `provincias`
 --
 
@@ -220,7 +253,12 @@ INSERT INTO `reportes` (`Reporte_ID`, `Usuario_ID`, `FechaIni`, `FechaFin`, `Tip
 (10, 1, '2025-09-08', '2025-09-15', 'GENERAL', 'CSV'),
 (11, 1, '2025-09-08', '2025-09-15', 'GENERAL', 'CSV'),
 (12, 1, '2025-09-08', '2025-09-15', 'GENERAL', 'PDF'),
-(13, 1, '2025-09-08', '2025-09-15', 'GENERAL', 'PDF');
+(13, 1, '2025-09-08', '2025-09-15', 'GENERAL', 'PDF'),
+(14, 1, '2025-09-09', '2025-09-16', 'GENERAL', 'CSV'),
+(15, 1, '2025-09-09', '2025-09-16', 'GENERAL', 'CSV'),
+(16, 1, '2025-09-09', '2025-09-16', 'GENERAL', 'PDF'),
+(17, 1, '2025-09-09', '2025-09-16', 'GENERAL', 'PDF'),
+(18, 1, '2025-09-10', '2025-09-17', 'POR_INGRESO', 'CSV');
 
 -- --------------------------------------------------------
 
@@ -341,7 +379,10 @@ INSERT INTO `usuarios` (`Usuario_ID`, `Nombre`, `Apellido`, `Correo`, `Password`
 (4, 'Martina', 'Echeverria', NULL, NULL, '41558222', '2025-09-15', 2, NULL, NULL, 6),
 (5, 'Martina', 'Echeverria', NULL, NULL, '41558222', '2025-09-15', 1, NULL, NULL, 6),
 (6, 'Julian', 'Correa', NULL, NULL, '46885112', '2025-09-16', 1, NULL, NULL, 6),
-(7, 'Mariano', 'Martinez', NULL, NULL, '41226553', '2025-09-16', 1, NULL, NULL, 6);
+(7, 'Mariano', 'Martinez', NULL, NULL, '41226553', '2025-09-16', 1, NULL, NULL, 6),
+(8, 'Pedro', 'Gomez', NULL, NULL, '47630250', '2025-09-16', 1, NULL, NULL, 6),
+(9, 'Nacho', 'Fernandez', NULL, NULL, '49668502', '2025-09-17', 1, NULL, NULL, 6),
+(10, 'Lucas', 'Cecenarro', 'cecenarro08@gmail.com', 'lucas1234', '1', '2025-09-24', 1, NULL, 2, 2);
 
 --
 -- Índices para tablas volcadas
@@ -384,6 +425,15 @@ ALTER TABLE `localidades`
   ADD PRIMARY KEY (`Localidad_ID`),
   ADD UNIQUE KEY `uk_localidades_nombre_provincia` (`Nombre`,`Provincia_ID`),
   ADD KEY `fk_localidades_provincias` (`Provincia_ID`);
+
+--
+-- Indices de la tabla `password_resets`
+--
+ALTER TABLE `password_resets`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_password_resets_token` (`token_hash`),
+  ADD KEY `idx_password_resets_user_used` (`user_id`,`used_at`),
+  ADD KEY `idx_password_resets_expires` (`expires_at`);
 
 --
 -- Indices de la tabla `provincias`
@@ -445,7 +495,7 @@ ALTER TABLE `usuarios`
 -- AUTO_INCREMENT de la tabla `accesos`
 --
 ALTER TABLE `accesos`
-  MODIFY `Acceso_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `Acceso_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT de la tabla `alertas`
@@ -472,6 +522,12 @@ ALTER TABLE `localidades`
   MODIFY `Localidad_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
+-- AUTO_INCREMENT de la tabla `password_resets`
+--
+ALTER TABLE `password_resets`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
 -- AUTO_INCREMENT de la tabla `provincias`
 --
 ALTER TABLE `provincias`
@@ -481,7 +537,7 @@ ALTER TABLE `provincias`
 -- AUTO_INCREMENT de la tabla `reportes`
 --
 ALTER TABLE `reportes`
-  MODIFY `Reporte_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `Reporte_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT de la tabla `roles`
@@ -511,7 +567,7 @@ ALTER TABLE `tipo_usuario`
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `Usuario_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `Usuario_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- Restricciones para tablas volcadas
@@ -543,6 +599,12 @@ ALTER TABLE `direcciones`
 --
 ALTER TABLE `localidades`
   ADD CONSTRAINT `fk_localidades_provincias` FOREIGN KEY (`Provincia_ID`) REFERENCES `provincias` (`Provincia_ID`) ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `password_resets`
+--
+ALTER TABLE `password_resets`
+  ADD CONSTRAINT `fk_password_resets_user` FOREIGN KEY (`user_id`) REFERENCES `usuarios` (`Usuario_ID`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `reportes`
