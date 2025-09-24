@@ -1,0 +1,24 @@
+2025-09-24 10:13:55 | FORGOT POST email='seguridad@itb.com'
+2025-09-24 10:13:55 | Usuario encontrado id=2 correo=seguridad@itb.com
+2025-09-24 10:13:55 | sendPasswordReset=OK link=http://localhost:3000/public/api/auth/reset.php?token=d56abc4a67228e60df7342cd75f2149a3be309b28b4f22e0cd30b9706bdf972f
+2025-09-24 12:03:14 | FORGOT POST email='seguridad@itb.com'
+2025-09-24 12:03:14 | Usuario encontrado id=2 correo=seguridad@itb.com
+2025-09-24 12:03:16 | sendPasswordReset=OK link=http://localhost:3000/public/api/auth/reset.php?token=88d79cc2424d60a94961ed3b89ca7a708a2f7099ff1dbf694a931ac4faf612c4
+2025-09-24 12:04:00 | FORGOT POST email='seguridad@itb.com'
+2025-09-24 12:04:00 | Usuario encontrado id=2 correo=seguridad@itb.com
+2025-09-24 12:04:02 | sendPasswordReset=OK link=http://localhost:3000/public/api/auth/reset.php?token=321827b9b56cdda1c5b8dd791b2b0f30ef9721d8afd576d846af8bc9b67bc9c9
+2025-09-24 12:17:50 | FORGOT POST email='seguridad@itb.com'
+2025-09-24 12:17:50 | Usuario encontrado id=2 correo=seguridad@itb.com
+2025-09-24 12:17:50 | sendPasswordReset=OK link=http://localhost:3000/public/api/auth/reset.php?token=fdc556cc4d8189c1ae318675c642e6112ce32be63380e38f74489061ea1fc3d3
+2025-09-24 12:19:36 | FORGOT POST email='seguridad@itb.com'
+2025-09-24 12:19:36 | Usuario encontrado id=2 correo=seguridad@itb.com
+2025-09-24 12:19:36 | sendPasswordReset=OK link=http://localhost:3000/public/api/auth/reset.php?token=4f6b65b769dcb634b38ea7651cb216774a2033acdbb31a297ab36de39326635c
+2025-09-24 12:20:01 | FORGOT POST email='seguridad@itb.com'
+2025-09-24 12:20:01 | Usuario encontrado id=2 correo=seguridad@itb.com
+2025-09-24 12:20:01 | sendPasswordReset=OK link=http://localhost:3000/public/api/auth/reset.php?token=8cd1d06b28476413a5c1fee8960e466471e803c586b0ee7d74230b5518aaa7ab
+2025-09-24 12:39:24 | FORGOT POST email='cecenarro08@gmail.com'
+2025-09-24 12:39:24 | Usuario encontrado id=10 correo=cecenarro08@gmail.com
+2025-09-24 12:39:28 | sendPasswordReset=OK link=http://localhost:3000/public/api/auth/reset.php?token=f0ef88579118d17883298928105c7e52701a332401c373d3bb00f088e57c9a90
+2025-09-24 12:47:57 | FORGOT POST email='seguridad@itb.com'
+2025-09-24 12:47:57 | Usuario encontrado id=2 correo=seguridad@itb.com
+2025-09-24 12:48:01 | sendPasswordReset=OK link=http://localhost:3000/public/api/auth/reset.php?token=d1dff932c37c10116b65a93273e9a8c25c9adc3168487be669bf73d772b624ab

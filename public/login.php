@@ -103,6 +103,12 @@ unset($_SESSION['login_error']);
             <input name="password" type="password" required autocomplete="current-password">
 
             <button class="primary">Ingresar</button>
+
+            <p style="margin-top:10px;text-align:center;">
+                <a href="<?= htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8') ?>/api/auth/forgot.php">
+                    ¿Olvidaste tu contraseña?
+                </a>
+            </p>
         </form>
     </div>
 </body>
