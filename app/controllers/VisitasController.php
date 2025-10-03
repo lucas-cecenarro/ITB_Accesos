@@ -15,6 +15,9 @@ class VisitasController
     // Estados de ACCESOS según tu tabla estado_acceso
     private const ESTADO_EN_CURSO   = 1;
     private const ESTADO_COMPLETADO = 2;
+    private const TIPO_USUARIO_VISITA_ID = 6; // "Invitado"
+    private const ESTADO_EN_CURSO_ID     = 1; // EN_CURSO
+    private const ESTADO_COMPLETADO_ID   = 2; // COMPLETADO
 
     public function __construct(?PDO $pdo = null)
     {
@@ -213,6 +216,104 @@ class VisitasController
             if ($this->db->inTransaction()) $this->db->rollBack();
             // si querés, logueá $e->getMessage()
             return [null, null, 'Error al registrar la acción.'];
+        }
+    }
+    public function listarVisitasEnCurso(): array
+    {
+        $pdo = DB::conn();
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        $sql = "
+      SELECT
+        a.Acceso_ID,
+        u.Usuario_ID,
+        u.Nombre,
+        u.Apellido,
+        u.Num_Documento,
+        u.TipoDoc_ID            AS TipoDocId,     -- << AÑADIDO
+        td.Nombre               AS TipoDocNombre, -- (texto “DNI”, “Pasaporte”)
+        a.Motivo,
+        a.FechaHora_Entrada
+      FROM accesos a
+      INNER JOIN usuarios u       ON u.Usuario_ID   = a.Usuario_ID
+      LEFT  JOIN tipo_documento td ON td.TipoDoc_ID = u.TipoDoc_ID
+      INNER JOIN estado_acceso e  ON e.Estado_ID    = a.Estado_ID
+      WHERE u.TipoUsuario_ID = :id_visita
+        AND a.TipoAcceso     = 'INGRESO'
+        AND a.Estado_ID      = :id_en_curso
+        AND a.FechaHora_Salida IS NULL
+      ORDER BY a.FechaHora_Entrada DESC, a.Acceso_ID DESC
+    ";
+
+        $st = $pdo->prepare($sql);
+        $st->execute([
+            ':id_visita'   => self::TIPO_USUARIO_VISITA_ID,
+            ':id_en_curso' => self::ESTADO_EN_CURSO_ID,
+        ]);
+
+        return $st->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Egreso rápido: cierra el mismo registro de INGRESO EN_CURSO.
+     * - setea FechaHora_Salida = NOW()
+     * - Estado = COMPLETADO
+     * - Operador_Egreso_ID = $operadorId (seguridad logueado)
+     */
+    public function egresoRapido(int $accesoId, int $operadorId): array
+    {
+        if ($accesoId <= 0 || $operadorId <= 0) {
+            return ['ok' => false, 'error' => 'Parámetros inválidos'];
+        }
+
+        $pdo = DB::conn();
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->beginTransaction();
+
+        try {
+            // Traigo y bloqueo el registro para asegurar estado/consistencia
+            $row = $pdo->prepare("
+          SELECT Acceso_ID, Usuario_ID, Estado_ID, TipoAcceso, FechaHora_Salida
+          FROM accesos
+          WHERE Acceso_ID = :id
+          FOR UPDATE
+        ");
+            $row->execute([':id' => $accesoId]);
+            $acc = $row->fetch(PDO::FETCH_ASSOC);
+
+            if (!$acc) {
+                throw new RuntimeException('Acceso no encontrado');
+            }
+            if ($acc['TipoAcceso'] !== 'INGRESO') {
+                throw new RuntimeException('El acceso no es un INGRESO');
+            }
+            if ((int)$acc['Estado_ID'] !== self::ESTADO_EN_CURSO_ID) {
+                throw new RuntimeException('El acceso no está EN_CURSO');
+            }
+            if (!is_null($acc['FechaHora_Salida'])) {
+                throw new RuntimeException('El acceso ya posee salida');
+            }
+
+            // Cierro el acceso
+            $upd = $pdo->prepare("
+            UPDATE accesos
+            SET FechaHora_Salida   = NOW(),
+                Estado_ID          = :comp,
+                Operador_Egreso_ID = :op,
+                TipoAcceso         = 'EGRESO'
+            WHERE Acceso_ID = :id
+            ");
+            $upd->execute([
+                ':comp' => self::ESTADO_COMPLETADO_ID,
+                ':op'   => $operadorId,
+                ':id'   => $accesoId,
+            ]);
+
+            $pdo->commit();
+            return ['ok' => true];
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            return ['ok' => false, 'error' => $e->getMessage()];
         }
     }
 }
